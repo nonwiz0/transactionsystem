@@ -1,0 +1,27 @@
+{% extends "aiuts/base.html" %}
+{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Send Money {% endblock %}
+{% block title %} Send Money {% endblock %}
+
+{% block mainbody %}
+	<h2 class="margin-top"> Send Money </h2>
+	<hr />
+	<form action="{% url 'aiuts:sendmoney' %}" method="post">
+		{% csrf_token %}
+		<div class="form-group">
+			<label> Your Acc ID </label>
+			<input type="text" class="form-control" name="source" />
+			<label> Recipient Acc_id: </label>
+			<input required="required" type="text" class="form-control" name="destination" placeholder="asdf2323r234rawf23f">
+			<label> Amount: </label>
+			<input class="form-control" required="required" type="number" min="0" max="{{ user.balance }}" name="amount">
+		</div>
+				<div class="form-group">
+			<label for="password">Password: </label>
+			<input required="required" class="form-control" type="password" name="password" />
+		</div>
+		<label> Remark: </label>
+		<textarea name="remark" class="form-control"></textarea>
+	
+		<input type="submit" value="Send" class="btn btn-outline-primary my-1">
+	</form>
+{% endblock %}

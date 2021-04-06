@@ -1,0 +1,29 @@
+{% extends "aiuts/base.html" %}
+{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Summary of Transaction {% endblock %}
+{% block title %} Summary of Transaction {% endblock %}
+{% block mainbody %}
+	<h2> Summary of Transaction </h2>
+	<hr />
+	<table class="table">
+		<tr> 
+			<th scope="col"> Date </th scope="col">
+			<th scope="col"> Sender </th scope="col">
+			<th scope="col"> Amount </th scope="col">
+			<th scope="col"> Recipient </th scope="col">
+			<th scope="col"> Remark </th scope="col">
+		</tr>
+		</thead>
+		<tbody>
+
+	{% for transaction in all_transaction %}
+	<tr>
+		<th scope="row"> {{ transaction.record_date }} </th>
+		<td>{% if transaction.sender.acc_id == user %} You {% else %} {{ transaction.sender.acc_id }} {% endif %} </td>
+		<td> {{ transaction.amount}} Baht </td>
+		<td>{% if transaction.recipient.acc_id == user %} You {% else %} {{ transaction.recipient.acc_id }} {% endif %} </td>
+		<td> {{ transaction.remark }} </td>
+	</tr>
+	{% endfor %}
+		</tbody>
+	</table>
+	{% endblock %}

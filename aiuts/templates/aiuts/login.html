@@ -1,0 +1,28 @@
+{% extends 'aiuts/base.html' %}
+{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Login {% endblock %}
+{% block title %} Login  {% endblock %}
+
+
+{% block mainbody %}
+	<h2> Login </h2>
+	<hr />
+	<form action="{% url 'aiuts:checklogin' %}" method="post">
+		{% csrf_token %}
+		<div class="form-group">
+			<label for="acc_id">Acc ID:</label>
+			<input required="required" type="text" class="form-control" id="acc_id" name="acc_id" placeholder="f23r432fdsaf3f234323fa">
+		</div>
+		<div class="form-group">
+			<label for="password">Password: </label>
+			<input required="required" class="form-control" type="password" name="password" />
+		</div>
+		<a class="btn btn-outline-secondary" href="{% url 'aiuts:index' %}"> Go back </a>
+		<button class="my-2 btn btn-outline-primary float-right" type="submit">
+			>
+			Login 
+		</button>
+	</form>
+
+
+
+{% endblock %}

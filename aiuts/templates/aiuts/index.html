@@ -1,0 +1,63 @@
+{% extends "aiuts/base.html" %}
+
+{% block mainbody %}
+	<h2> Actions </h2>
+	<hr />
+	<ul>
+		<li> 
+		 <a href="{% url 'aiuts:signup' %}">Sign up for account </a>	
+		</li>
+		<li>
+			 <a href="{% url 'aiuts:getbalance' %}"> Check balance </a>
+		</li>
+		<li>
+		 <a href="{% url 'aiuts:getaccid' %}"> Forget Account ID? </a>
+		</li>
+		<li>
+			 <a href="{% url 'aiuts:login' %}">Open Dashboard</a>
+		</li>
+		<li>
+			<a href="{% url 'aiuts:gettransaction' %}"> Summary Transaction </a>
+			</li>
+			<li>
+			<a href="{% url 'aiuts:sendmoneypage' %}"> Send Money </a>
+			</li>
+
+	</ul>
+
+		<h2 class="mt-2"> Current Accounts </h2>
+		<hr />
+			{% if all_user %}
+		<ul>
+			{% for user in all_user %}
+				<li>{{ user.acc_id }}  </li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<p> No accounts are available. </p>
+	{% endif %}
+	<h2 class="mt-1"> Group Members: </h2>
+	<hr />
+	<ul>
+		<li> Andreas </li>
+		<li> Broset </li>
+		<li> Bryan </li>
+		<li> Yilin </li>
+	</ul>
+	<h2 class="mt-1"> Changelog: </h2>
+	<hr />
+	<ul>
+		<li> Registration </li>
+		<li> Login </li>
+		<li> Check balance </li>
+		<li> Open dashboard (bypassable) </li>
+		<li> Check account summary </li>
+		<li> Send money </li>
+		<li> Remove Url bypass </li>
+
+	</ul>
+
+{% endblock %}
+
+{% block goback %}
+{% endblock %}

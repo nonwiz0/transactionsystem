@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		{% load static %}
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-BmbxuPwQa2lc/FVzBcNJ7UAyJxM6wuqIj61tLrc4wSX0szH/Ev+nYRRuWlolflfl"
+			crossorigin="anonymous"
+			/>
+
+		<link
+			rel="stylesheet"
+			type="text/css"
+			href="{% static 'aiuts/style.css' %}"
+			/>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>AIUTS | {% block title %} Index {% endblock %}</title>
+	</head>
+	<body>
+		{% block alert %} 	{% if messages %}
+			<ul class="messages">
+				{% for message in messages %}
+					<div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+						{{ message}}
+						<a type="button" class="close" data-dismiss="alert" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</a>
+					</div>
+
+				{% endfor %}
+			</ul>
+		{% endif %}
+
+	{% endblock %}
+	<section>
+		{% comment %} Header {% endcomment %}
+		<p class="margin-bot text-grey">  {% block currPage %} Index {% endblock%}</p>
+		<div class="align-center">
+			<img class="margin-bot" src="{% static 'aiuts/images/wallet.svg' %}" height="250 px" width="250 px">
+			<h1>{% block heading1 %} AIUTS {% endblock %} </h1>
+
+		</div>
+	</section>
+
+	<section>
+		{% comment %} Body {% endcomment %}
+		{% block mainbody %} {% endblock %}
+	</section>
+	<section class="margin-top">
+		{% comment %} Footer {% endcomment %}
+		<hr>
+		<div class="align-center">
+			<p><address>Contributed by <br /> Andreas, Broset, Bryan, Yilin</address></p>
+			<p>  </p>
+		</div>
+	</section>
+
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+	</body>
+</html>
