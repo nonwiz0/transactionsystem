@@ -32,6 +32,11 @@ class GetaccidView(generic.TemplateView):
 def create_acc(request):
     fullname = request.POST['fullname']
     password = request.POST['password']
+     
+    if not len(fullname) or not len(password):
+        messages.info(request, 'Provide appropriate your full name and password!')
+        return HttpResponseRedirect(reverse('aiuts:signup'))
+
     acc_id = hashlib.md5(str.encode(fullname)).hexdigest()
     hash_pw = hashlib.md5(str.encode(password)).hexdigest()
     for acc in User.objects.all():
@@ -47,15 +52,15 @@ def check_balance(request):
     acc_id = request.POST['acc_id']
     password = request.POST['password']
     hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    for acc in User.objects.all():
-        if acc.acc_id == acc_id and acc.password == hash_pw:
+    if User.objects.filter(pk=acc_id).exists():
+        curr_user = User.objects.get(pk=acc_id)
+        if curr_user.password == hash_pw:
             messages.info(request, 'Your account has {:.2f} Baht'.format(acc.balance))
             return HttpResponseRedirect(reverse('aiuts:getbalance'))
-            #return redirect(request.META['HTTP_REFERER'])
-        if acc.acc_id == acc_id and acc.password != hash_pw:
-            messages.info(request, 'Incorrect credential')
-           # return HttpReponseRedirect(reverse('aiuts:getbalance'))
-            return redirect(request.META['HTTP_REFERER'])
+    else:
+        messages.info(request, 'Incorrect acc_id or password!')
+        return HttpResponseRedirect(reverse('aiuts:getbalance'))
+
 
 
 def check_accid(request):

@@ -37,21 +37,34 @@ class UserCheckBalanceTest(TestCase):
         self.assertContains(response, "Your account has")
 
     def test_check_balance_with_no_acc_id(self):
+        """
+        The test purpose is to check whether the server accepting whitespace for the acc_id or not. We got an issue at first because our function didn't return 
+        an appropriate message / page, so we fixed the code by returning an appripriate response or page
+        """
         response = self.client.post(reverse('aiuts:create_acc'), {"fullname": "Testing01", "password": "Asd,car15"}, follow=True)
         response = self.client.post(reverse('aiuts:checkbalance'), {"acc_id": "", "password":"Asd,car15"}, follow=True)
         self.assertEqual(response.status_code, 200)
     
     def test_check_balance_with_no_pass(self):
+        """
+        Test case with unprovided password eventhough the acc_id is provided. The same solution as the function above.
+        """
         response = self.client.post(reverse('aiuts:create_acc'), {"fullname": "Testing01", "password": "Asd,car15"}, follow=True)
         response = self.client.post(reverse('aiuts:checkbalance'), {"acc_id": "afe600a43cea6bdaf6c362905db6b883", "password":""}, follow=True)
         self.assertEqual(response.status_code, 200)
     
     def test_check_balance_with_no_id_pw(self):
+        """
+        The same test case when there is no acc_id and pw, it is fixed after we fixed the no_acc_id
+        """
         response = self.client.post(reverse('aiuts:create_acc'), {"fullname": "Testing01", "password": "Asd,car15"}, follow=True)
         response = self.client.post(reverse('aiuts:checkbalance'), {"acc_id": "", "password":""}, follow=True)
         self.assertEqual(response.status_code, 200)
     
     def test_check_balance_with_non_existing_id(self):    
+        """
+        Test case when the id is not provided. Fix by the previous solution.
+        """
         response = self.client.post(reverse('aiuts:checkbalance'), {"acc_id": "adsfawefuihewifhui23123412", "password":"asdf2323"}, follow=True)
         self.assertEqual(response.status_code, 200)
     
