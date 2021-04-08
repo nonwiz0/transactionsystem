@@ -51,14 +51,17 @@ def create_acc(request):
 def check_balance(request):
     acc_id = request.POST['acc_id']
     password = request.POST['password']
+    if not len(acc_id) or not len(password):
+        messages.info(request, 'Acc_id or password is not filled properly')
+        return HttpResponseRedirect(reverse('aiuts:getbalance'))
     hash_pw = hashlib.md5(str.encode(password)).hexdigest()
     if User.objects.filter(pk=acc_id).exists():
         curr_user = User.objects.get(pk=acc_id)
         if curr_user.password == hash_pw:
-            messages.info(request, 'Your account has {:.2f} Baht'.format(acc.balance))
+            messages.info(request, 'Your account has {:.2f} Baht'.format(curr_user.balance))
             return HttpResponseRedirect(reverse('aiuts:getbalance'))
     else:
-        messages.info(request, 'Incorrect acc_id or password!')
+        messages.info(request, 'Incorrect acc id or password!')
         return HttpResponseRedirect(reverse('aiuts:getbalance'))
 
 
@@ -97,28 +100,27 @@ def send_money(request):
     amount = float(request.POST['amount'])
     password = request.POST['password']
     hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    remark = request.POST['remark']
-    for acc in User.objects.all():
-        if acc.acc_id == acc_id and acc.password == hash_pw:
-            if amount < acc.balance and User.objects.filter(pk=recipient).exists():
-                recipient_acc = User.objects.get(pk=recipient)
-                acc.balance -= amount
-                recipient_acc.balance += amount
-                recipient_acc.save()
-                acc.save()
-                messages.info(request, "Money sent successfully, you have {} baht left".format(acc.balance))
-                transaction = Transaction(sender=acc, recipient=recipient_acc, amount=amount, remark=remark)
-                transaction.save()
-                return HttpResponseRedirect(reverse('aiuts:getbalance'))
-                # return redirect(request.META['HTTP_REFERER'])
-            else:
-                messages.info(request, "Failed to send, please check the address")
-                return HttpResponseRedirect(reverse('aiuts:getbalance'))
-        if acc.acc_id == acc_id and acc.password != hash_pw:
-            messages.info(request, 'Incorrect credential')
-            return HttpResponseRedirect(reverse('aiuts:getbalance'))
-           # return redirect(request.META['HTTP_REFERER'])
-    return HttpResponseRedirect(reverse('aiuts:getbalance'))
+    remark = request.POST['remark'] 
+    if not len(acc_id) or not len(recipient) or not len(password) or amount < 0.0 or acc_id == recipient:
+        messages.info(request, "Please double check the information again to send the money")
+        return HttpResponseRedirect(reverse('aiuts:sendmoneypage'))
+    if not User.objects.filter(pk=acc_id).exists() or not User.objects.filter(pk=recipient).exists():
+        messages.info(request, "please double check the detail again")
+        return HttpResponseRedirect(reverse('aiuts:sendmoneypage'))
+    acc = User.objects.get(pk=acc_id)
+    rec_user = User.objects.get(pk=recipient)
+    if acc.password == hash_pw:
+        if rec_user.balance > amount:
+            acc.balance -= amount
+            rec_user.balance += amount
+            rec_user.save()
+            acc.save()
+            transaction = Transaction(sender=acc, recipient=rec_user, amount=amount, remark=remark)
+            transaction.save()     
+            messages.info(request, "You have sent {:.2f} baht to {}".format(amount, rec_user.acc_id))
+            return HttpResponseRedirect(reverse('aiuts:sendmoneypage')) 
+    messages.info(request, "Sent failed, please double check the detail again")
+    return HttpResponseRedirect(reverse('aiuts:sendmoneypage')) 
 
 def deposit_money(request):
     acc_id = request.POST['acc_id']

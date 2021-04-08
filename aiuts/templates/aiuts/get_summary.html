@@ -19,7 +19,7 @@
 	<tr>
 		<th scope="row"> {{ transaction.record_date }} </th>
 		<td>{% if transaction.sender.acc_id == user %} You {% else %} {{ transaction.sender.acc_id }} {% endif %} </td>
-		<td> {{ transaction.amount}} Baht </td>
+		<td> {{ transaction.amount|floatformat:2}} Baht </td>
 		<td>{% if transaction.recipient.acc_id == user %} You {% else %} {{ transaction.recipient.acc_id }} {% endif %} </td>
 		<td> {{ transaction.remark }} </td>
 	</tr>
