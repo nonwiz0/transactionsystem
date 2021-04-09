@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% load static %}
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+	
+	
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{% static 'aiuts/style.css' %}"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIUTS | {% block title %} Index {% endblock %}</title>
+  </head>
+  <body>
+ {% block alert %} 	{% if form.errors %}
+	<ul class="messages">
+		<div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+			{{ "Your username and password didn't match. Please try again" }}
+			<a type="button" class="close" data-dismiss="alert" aria-label="Close">
+			<span aria-hidden="true">&times;</span>
+			</a>
+		</div>
+		
+	</ul>
+	{% endif %}
+  {% if next %}
+	{% if user.is_authenticated %}
+	<ul class="messages">
+		<div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+			{{ "Your account doesn't have access to this page. To proceed,
+      please login with an account that has access." }}
+      		</div>
+		
+	</ul>
+  {% endif %}
+	{% endif %}
+	
+  {% endblock %}
+   <section>
+   {% comment %} Header {% endcomment %}
+   <div>
+    <p class="text-grey">  {% block currPage %} Index {% endblock%}</p>
+  </div>
+	<div class="align-center">
+    <img class="margin-bot" src="{% static 'aiuts/images/wallet.svg' %}" height="250 px" width="250 px">
+    <h1>{% block heading1 %} AIUTS {% endblock %} </h1>
+	</div>
+	</section>
+
+	<section>
+	{% comment %} Body {% endcomment %}
+    {% block mainbody %} {% endblock %}
+  </section>
+	<section class="margin-top">
+	{% comment %} Footer {% endcomment %}
+      <hr>
+      <div class="align-center">
+        <p><address>Contributed by <br /> Andreas, Broset, Bryan, Yilin</address></p>
+        <p>  </p>
+      </div>
+    </section>
+ 
+ <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+ </body>
+</html>

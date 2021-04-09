@@ -35,7 +35,10 @@
 	{% endblock %}
 	<section>
 		{% comment %} Header {% endcomment %}
-		<p class="margin-bot text-grey">  {% block currPage %} Index {% endblock%}</p>
+		<div class="margin-bot">
+		<p class="text-grey" style="float:left">  {% block currPage %} Index {% endblock%}</p>
+		<p style="float:right"> <span class="text-grey"> {{ request.user }} </span> | <a href="{% url 'logout' %}" class="text-danger"> Logout </a></p>
+		</div>
 		<div class="align-center">
 			<img class="margin-bot" src="{% static 'aiuts/images/wallet.svg' %}" height="250 px" width="250 px">
 			<h1>{% block heading1 %} AIUTS {% endblock %} </h1>
