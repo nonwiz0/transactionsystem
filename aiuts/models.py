@@ -18,4 +18,6 @@ class Transaction(models.Model):
     record_date = models.DateTimeField('date recorded', auto_now_add=True)
     id = models.AutoField(primary_key=True)
 
+    def __str__(self):
+        return "Sender: {}, Recipient: {}, Amount: {}, Date: {}, Remark: {}".format(self.sender, self.recipient, self.amount, self.record_date, self.remark)
   

@@ -11,6 +11,7 @@ from random import random
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate
+from datetime import datetime
 
 class IndexView(generic.ListView):
     template_name = 'aiuts/index.html'
@@ -34,6 +35,23 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = Account.objects.get(user=self.request.user)
+        return context
+
+class TransactionSummary(LoginRequiredMixin, generic.ListView):
+    login_url = '/accounts/login'
+    template_name = 'aiuts/get_summary.html'
+    context_object_name = 'user'
+
+    def get_queryset(self):
+        curr_user = Account.objects.get(user=self.request.user)
+        acc_id = curr_user.acc_id
+        return acc_id
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        curr_user = Account.objects.get(user=self.request.user)
+        acc_id = curr_user.acc_id
+        context['all_transaction'] = set(Transaction.objects.filter(sender=curr_user)).union(set(Transaction.objects.filter(recipient=curr_user)[:]))
         return context
 
 def create_acc(request):
@@ -91,20 +109,45 @@ def deposit_money(request):
     messages.info(request, "Check the detail again before deposit!")
     return redirect(request.META['HTTP_REFERER'])
    
+# def get_summary_of_transaction(request):
+#     password = request.POST['password']
+#     template = loader.get_template('aiuts/get_summary.html')
+#     if Account.objects.filter(user=request.user).exists():
+#         user_acc = Account.objects.get(user=request.user)
+#         user = authenticate(request, username=request.user.username, password=password)
+#         if user is not None:
+#             all_transaction = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
+#             context = {
+#                 'all_transaction': all_transaction,
+#                 'user': user_acc.acc_id,
+#                 'password': password
+#             }
+#             return HttpResponse(template.render(context, request))
+#     messages.info(request, "Incorrect password!")
+#     return redirect(request.META['HTTP_REFERER'])
 
-def get_summary_of_transaction(request):
-    password = request.POST['password']
+def search_transaction(request):
     template = loader.get_template('aiuts/get_summary.html')
-    if Account.objects.filter(user=request.user).exists():
-        user_acc = Account.objects.get(user=request.user)
-        user = authenticate(request, username=request.user.username, password=password)
-        if user is not None:
-            all_transaction = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
-            context = {
-                'all_transaction': all_transaction,
-                'user': user_acc.acc_id
-            }
-            return HttpResponse(template.render(context, request))
-    messages.info(request, "Incorrect password!")
-    return redirect(request.META['HTTP_REFERER'])
+    user_acc = Account.objects.get(user=request.user)
+    acc_addr = request.POST['acc_addr']
+    t = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
+    found_record = []
+    from_date = request.POST['from_date']
+    to_date = request.POST['to_date']
+    if len(acc_addr):
+        for i in t:
+            if i.sender.acc_id == acc_addr or i.recipient.acc_id == acc_addr:
+                found_record.append(i)
 
+    if len(from_date) and len(to_date):
+        from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+        to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+        for i in t:
+            temp = i.record_date.date()
+            if temp >= from_date_obj and temp <= to_date_obj:
+                found_record.append(i)
+
+    all_transaction = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
+    context = {'all_transaction':found_record, "user":user_acc.acc_id}
+    messages.info(request, "Found Record: {}".format(found_record))
+    return HttpResponse(template.render(context, request))

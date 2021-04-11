@@ -2,6 +2,23 @@
 {% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Summary of Transaction {% endblock %}
 {% block title %} Summary of Transaction {% endblock %}
 {% block mainbody %}
+	<h2> Search Transaction </h2>
+	<hr />
+
+
+	<form action="{% url 'aiuts:searchtransaction' %}" method="POST">	
+		{% csrf_token %}
+		
+		<label> From Date: </label>
+		<input type="date" name="from_date"/>
+		<label> To Date: </label>
+		<input type="date" name="to_date" />
+		<label> Account Address </label>
+		<input type="text" placeholder="Optional" name="acc_addr" />
+		<input type="submit" value="Search" />
+	</form>
+		<br />
+	
 	<h2> Summary of Transaction </h2>
 	<hr />
 	<table class="table">
