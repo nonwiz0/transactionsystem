@@ -11,6 +11,9 @@ urlpatterns = [
     path('send_money', views.send_money, name='sendmoney'),
     path('deposit_money', views.deposit_money, name="depositmoney"),
     # path('account/summary/check', views.get_summary_of_transaction, name="getsummaryoftransaction"),
-    path('dashboard/summary', views.TransactionSummary.as_view(), name="transactionsummary")
+    path('dashboard/summary', views.TransactionSummary.as_view(), name="transactionsummary"),
 
+    path('admin/dashboard', views.AdminDashboard.as_view(), name='admindash'),
+    path('admin/dashboard/approve/<str:tid>', views.admin_approve_transaction, name="approvetransaction"),
+    path('admin/dashboard/decline/<str:tid>', views.admin_decline_transaction, name="declinetransaction")
 ]

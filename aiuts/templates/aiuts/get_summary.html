@@ -38,11 +38,13 @@
 	{% if all_transaction %}
 	<table class="table">
 		<tr> 
+			
 			<th scope="col"> Date </th scope="col">
 			<th scope="col"> Sender </th scope="col">
 			<th scope="col"> Amount </th scope="col">
 			<th scope="col"> Recipient </th scope="col">
 			<th scope="col"> Remark </th scope="col">
+			<th scope="col"> Status </th>
 		</tr>
 		</thead>
 		<tbody>
@@ -54,6 +56,7 @@
 		<td> {{ transaction.amount|floatformat:2}} Baht </td>
 		<td>{% if transaction.recipient.acc_id == user %} You {% else %} {{ transaction.recipient.acc_id }} {% endif %} </td>
 		<td> {{ transaction.remark }} </td>
+		<td> {{ transaction.complete }} </td>
 	</tr>
 	{% empty %}
 	No transaction records!

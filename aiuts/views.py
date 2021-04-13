@@ -27,6 +27,22 @@ class LoginView(generic.TemplateView):
 class SignupView(generic.TemplateView):
     template_name = 'aiuts/sign_up.html'
 
+
+class AdminDashboard(LoginRequiredMixin, generic.ListView):
+    login_url = '/accounts/login'
+    template_name = 'aiuts/admin_dash.html'
+    model = Transaction
+    context_object_name = 'all_transaction'
+
+    def get_queryset(self):
+        return Transaction.objects.filter(complete=False)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = Account.objects.get(user=self.request.user)
+        return context
+    
+
 class Dashboard(LoginRequiredMixin, generic.ListView):
     login_url = '/accounts/login'
     template_name = 'aiuts/account_dash.html'
@@ -36,6 +52,23 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
         context = super().get_context_data(**kwargs)
         context['user'] = Account.objects.get(user=self.request.user)
         return context
+    
+    def post(self, request, *args, **kwargs):
+        template = loader.get_template(self.template_name)
+        user_acc = Account.objects.get(user=request.user)
+        amount = float(request.POST['amount'])
+        password = request.POST['password']
+        sender_addr = request.POST['acc_addr']
+        if len(sender_addr):
+            sender = Account.objects.get(acc_id = sender_addr)
+        else:
+            req_admin = Transaction(sender=Account.objects.get(acc_id='bd5af1f610a12434c9128e4a399cef8a'), recipient=user_acc, amount=amount, type="TU")
+            req_admin.save()
+        messages.info(request, "Amount: {}, Pw: {}, Acc_Addr: {}".format(amount, password, sender_addr))
+        return redirect(request.META['HTTP_REFERER'])
+
+
+
 
 class TransactionSummary(LoginRequiredMixin, generic.ListView):
     login_url = '/accounts/login'
@@ -136,12 +169,40 @@ def deposit_money(request):
             curr_acc.balance += amount
             curr_acc.save()
             trans_record = Transaction(sender=curr_acc, recipient=curr_acc, amount=amount, remark="Deposit money")
+            trans_record.complete=True
             trans_record.save()
             messages.info(request, "You have deposited {:.2f} Baht".format(amount))
             return redirect(request.META['HTTP_REFERER'])
     messages.info(request, "Check the detail again before deposit!")
     return redirect(request.META['HTTP_REFERER'])
-   
+
+def admin_approve_transaction(request, tid):
+    if Transaction.objects.filter(id=tid).exists():
+       record = Transaction.objects.get(id=tid)
+       recipient = record.recipient
+       recipient.balance += record.amount
+       bank = record.sender
+       bank.balance -= record.amount
+       bank.save()
+       recipient.save()
+       record.complete = True
+       record.remark = "Approved at {}".format(timezone.now())
+       record.save()
+    messages.info(request, "Transaction ID: {} is approved".format(tid))
+    return redirect(request.META['HTTP_REFERER'])
+
+def admin_decline_transaction(request, tid):
+    if Transaction.objects.filter(id=tid).exists():
+        record = Transaction.objects.get(id=tid)
+        record.remark = "Transaction is Declined"
+        record.complete = True
+        record.save()    
+    messages.info(request, "Transaction ID: {} is declined".format(tid))
+    return redirect(request.META['HTTP_REFERER'])
+
+
+
+
 """def get_summary_of_transaction(request):
     password = request.POST['password']
     template = loader.get_template('aiuts/get_summary.html')

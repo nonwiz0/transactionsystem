@@ -16,17 +16,19 @@ class Transaction(models.Model):
     amount = models.FloatField()
     remark = models.CharField(max_length=256, default="No message")
     record_date = models.DateTimeField('date recorded', auto_now_add=True)
+    complete = models.BooleanField(default=False)
+    type = models.CharField(choices=[('TU', 'Top Up'), ('ROP', 'Request of Payment'), ('NOR', 'Normal Transaction')], default='NOR', max_length=100)
     id = models.AutoField(primary_key=True)
 
     def __str__(self):
         return "Sender: {}, Recipient: {}, Amount: {}, Date: {}, Remark: {}".format(self.sender, self.recipient, self.amount, self.record_date, self.remark)
   
-class Pending(models.Model):
-    Transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
-    Transaction_choices = [ ('TU','Top Up'), ('ROP','Request of Payment')]
-    Type = models.CharField(
-        choices = Transaction_choices,
-        default = "Not fill",
-        max_length = 256
-    )
-    Complete_status = models.BooleanField(default=False)
+# class Pending(models.Model):
+#     Transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+#     Transaction_choices = [ ('TU','Top Up'), ('ROP','Request of Payment')]
+#     Type = models.CharField(
+#         choices = Transaction_choices,
+#         default = "Not fill",
+#         max_length = 256
+#     )
+#     Complete_status = models.BooleanField(default=False)
