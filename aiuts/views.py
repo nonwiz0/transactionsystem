@@ -11,12 +11,12 @@ from random import random
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class IndexView(generic.ListView):
     template_name = 'aiuts/index.html'
     context_object_name = 'all_user'
-
+    
     def get_queryset(self):
         """Return the last five published questions."""
         return Account.objects.all()[:]
@@ -53,6 +53,24 @@ class TransactionSummary(LoginRequiredMixin, generic.ListView):
         acc_id = curr_user.acc_id
         context['all_transaction'] = set(Transaction.objects.filter(sender=curr_user)).union(set(Transaction.objects.filter(recipient=curr_user)[:]))
         return context
+
+    def post(self, request, *args, **kwargs):
+        template = loader.get_template('aiuts/get_summary.html')
+        user_acc = Account.objects.get(user=request.user)
+        acc_addr = request.POST['acc_addr']
+        t = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
+        from_date = request.POST['from_date']
+        to_date = request.POST['to_date']
+        if len(from_date) and len(to_date):
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            from_date = datetime.strptime(from_date, '%Y-%m-%d')
+            to_date = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
+            
+        filter_record = set(Transaction.objects.filter(sender=user_acc.acc_id).filter(record_date__range=(from_date, to_date))).union(set(Transaction.objects.filter(recipient=user_acc.acc_id).filter(record_date__range=(from_date, to_date)))) 
+        context = {'all_transaction':filter_record, "user":user_acc.acc_id}
+        messages.info(request, "Found Record: {}".format(filter_record))
+        return HttpResponse(template.render(context, request))
 
 def create_acc(request):
     username = request.POST['username']
@@ -126,7 +144,8 @@ def deposit_money(request):
 #     messages.info(request, "Incorrect password!")
 #     return redirect(request.META['HTTP_REFERER'])
 
-def search_transaction(request):
+
+"""def search_transaction(request):
     template = loader.get_template('aiuts/get_summary.html')
     user_acc = Account.objects.get(user=request.user)
     acc_addr = request.POST['acc_addr']
@@ -150,4 +169,4 @@ def search_transaction(request):
     all_transaction = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
     context = {'all_transaction':found_record, "user":user_acc.acc_id}
     messages.info(request, "Found Record: {}".format(found_record))
-    return HttpResponse(template.render(context, request))
+    return HttpResponse(template.render(context, request))"""

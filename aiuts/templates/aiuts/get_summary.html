@@ -4,9 +4,11 @@
 {% block mainbody %}
 	<h2> Search Transaction </h2>
 	<hr />
+{% comment %}
+ {% url 'aiuts:searchtransaction' %}" 
+ {% endcomment %}
 
-
-	<form action="{% url 'aiuts:searchtransaction' %}" method="POST">	
+	<form method="POST">	
 		{% csrf_token %}
 		
 		<label> From Date: </label>
