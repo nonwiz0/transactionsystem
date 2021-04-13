@@ -3,11 +3,14 @@
 {% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Dashboard {% endblock %}
 {% block title %} Dashboard {% endblock %}
 {% block mainbody %}
-	<h2> Actions </h2>
 	<hr />
-	<p> User: {{ request.user }}  </p>
-	<p>Acc.ID: {{ user.acc_id }} : {{ user.balance | floatformat:2}} Baht </p>
-	<h2 class="margin-top"> Deposit Money </h2>
+	<div>
+	<p style="float: left"> <b>Acc ID:</b> {{ user.acc_id}} </p>
+	<p style="float: right"> <b>Balance:</b> {{ user.balance | floatformat:2 }} Baht </p>
+	</div>
+	<br />
+	
+	<h2 class="margin-top"> Top Up </h2>
 		<hr />
 		<form action="{% url 'aiuts:depositmoney' %}" method="post">
 			{% csrf_token %}
@@ -23,7 +26,25 @@
 
 		</form>
 
-	
+		<h2 class="margin-top"> Request Payment </h2>
+		<hr />
+		<form action="{% url 'aiuts:depositmoney' %}" method="post">
+			{% csrf_token %}
+			<div class="form-group">
+			<label> <b> From </b> Account Address: </label>
+			<input type="text" class="form-control" />
+			<input type="hidden" name="acc_id" value="{{ user.acc_id }}" />
+			<label> Amount: </label>
+			<input class="form-control" required="required" type="number" step="0.01" name="amount">
+			<label> Password: </label>
+			<input class="form-control" required="required" type="password" name="password" />
+
+			<input class="btn my-2 btn-outline-primary" type="submit" value="Deposit">
+			</div>
+
+		</form>
+
+
 	<h2 class="margin-top"> Send Money </h2>
 	<hr />
 	<form action="{% url 'aiuts:sendmoney' %}" method="post">
