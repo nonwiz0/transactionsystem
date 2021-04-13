@@ -6,7 +6,6 @@ from django.views import generic
 from django.contrib.auth.models import User
 from .models import Account, Transaction
 from django.utils import timezone
-import hashlib
 from random import random
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -47,6 +46,12 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
     login_url = '/accounts/login'
     template_name = 'aiuts/account_dash.html'
     model = Transaction
+    context_object_name = 'all_transaction'
+
+    def get_queryset(self):
+        curr_acc = Account.objects.get(user=self.request.user)
+        return set(Transaction.objects.filter(complete=False).filter(sender=curr_acc)).union(set(Transaction.objects.filter(complete=False).filter(recipient=curr_acc)))
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -57,18 +62,19 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
         template = loader.get_template(self.template_name)
         user_acc = Account.objects.get(user=request.user)
         amount = float(request.POST['amount'])
-        password = request.POST['password']
         sender_addr = request.POST['acc_addr']
+        if amount < 0:
+            messages.info(request, "Please enter appropriate amount")
+            return redirect(request.META['HTTP_REFERER'])
         if len(sender_addr):
             sender = Account.objects.get(acc_id = sender_addr)
+            req_user = Transaction(sender=sender, recipient=user_acc, amount=amount, type="ROP")
+            req_user.save()
         else:
             req_admin = Transaction(sender=Account.objects.get(acc_id='bd5af1f610a12434c9128e4a399cef8a'), recipient=user_acc, amount=amount, type="TU")
             req_admin.save()
-        messages.info(request, "Amount: {}, Pw: {}, Acc_Addr: {}".format(amount, password, sender_addr))
+        messages.info(request, "New pending request is created!")
         return redirect(request.META['HTTP_REFERER'])
-
-
-
 
 class TransactionSummary(LoginRequiredMixin, generic.ListView):
     login_url = '/accounts/login'
@@ -102,7 +108,6 @@ class TransactionSummary(LoginRequiredMixin, generic.ListView):
             filter_record = set(Transaction.objects.filter(sender=user_acc.acc_id).filter(record_date__range=(from_date, to_date))).union(set(Transaction.objects.filter(recipient=user_acc.acc_id).filter(record_date__range=(from_date, to_date)))) 
         else:
             filter_record = set(Transaction.objects.filter(sender=user_acc.acc_id).filter(record_date__lte=to_date)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id).filter(record_date__lte=to_date))) 
-    
         if Account.objects.filter(acc_id=acc_addr).exists():
             target_acc = Account.objects.get(acc_id=acc_addr)
             at_sender = Transaction.objects.filter(sender=user_acc)
@@ -119,6 +124,7 @@ class TransactionSummary(LoginRequiredMixin, generic.ListView):
         context = {'all_transaction':filter_record, "user":user_acc.acc_id}
         messages.info(request, "Found {} record(s)".format(len(filter_record)))
         return HttpResponse(template.render(context, request))
+
 
 def create_acc(request):
     username = request.POST['username']
@@ -151,7 +157,7 @@ def send_money(request):
                 rec_acc.balance += amount
                 curr_acc.save()
                 rec_acc.save()
-                transaction = Transaction(sender=curr_acc, recipient=rec_acc, amount=amount, remark=remark)
+                transaction = Transaction(sender=curr_acc, recipient=rec_acc, amount=amount, remark=remark, complete=True)
                 transaction.save()     
                 messages.info(request, "You have sent {:.2f} baht to {}".format(amount, rec_acc.acc_id))
                 return redirect(request.META['HTTP_REFERER'])
@@ -176,14 +182,17 @@ def deposit_money(request):
     messages.info(request, "Check the detail again before deposit!")
     return redirect(request.META['HTTP_REFERER'])
 
-def admin_approve_transaction(request, tid):
+def approve_transaction(request, tid):
     if Transaction.objects.filter(id=tid).exists():
        record = Transaction.objects.get(id=tid)
        recipient = record.recipient
        recipient.balance += record.amount
-       bank = record.sender
-       bank.balance -= record.amount
-       bank.save()
+       sender = record.sender
+       if sender.balance < record.amount:
+           messages.info(request, "Please make sure you have enough balance")
+           return redirect(request.META['HTTP_REFERER'])
+       sender.balance -= record.amount
+       sender.save()
        recipient.save()
        record.complete = True
        record.remark = "Approved at {}".format(timezone.now())
@@ -191,7 +200,7 @@ def admin_approve_transaction(request, tid):
     messages.info(request, "Transaction ID: {} is approved".format(tid))
     return redirect(request.META['HTTP_REFERER'])
 
-def admin_decline_transaction(request, tid):
+def decline_transaction(request, tid):
     if Transaction.objects.filter(id=tid).exists():
         record = Transaction.objects.get(id=tid)
         record.remark = "Transaction is Declined"
@@ -202,46 +211,3 @@ def admin_decline_transaction(request, tid):
 
 
 
-
-"""def get_summary_of_transaction(request):
-    password = request.POST['password']
-    template = loader.get_template('aiuts/get_summary.html')
-    if Account.objects.filter(user=request.user).exists():
-        user_acc = Account.objects.get(user=request.user)
-        user = authenticate(request, username=request.user.username, password=password)
-        if user is not None:
-            all_transaction = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
-            context = {
-                'all_transaction': all_transaction,
-                'user': user_acc.acc_id,
-                'password': password
-            }
-            return HttpResponse(template.render(context, request))
-    messages.info(request, "Incorrect password!")
-    return redirect(request.META['HTTP_REFERER'])"""
-
-"""def search_transaction(request):
-    template = loader.get_template('aiuts/get_summary.html')
-    user_acc = Account.objects.get(user=request.user)
-    acc_addr = request.POST['acc_addr']
-    t = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
-    found_record = []
-    from_date = request.POST['from_date']
-    to_date = request.POST['to_date']
-    if len(acc_addr):
-        for i in t:
-            if i.sender.acc_id == acc_addr or i.recipient.acc_id == acc_addr:
-                found_record.append(i)
-
-    if len(from_date) and len(to_date):
-        from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
-        to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
-        for i in t:
-            temp = i.record_date.date()
-            if temp >= from_date_obj and temp <= to_date_obj:
-                found_record.append(i)
-
-    all_transaction = set(Transaction.objects.filter(sender=user_acc.acc_id)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id)[:]))
-    context = {'all_transaction':found_record, "user":user_acc.acc_id}
-    messages.info(request, "Found Record: {}".format(found_record))
-    return HttpResponse(template.render(context, request))"""

@@ -2,65 +2,72 @@
 {% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Summary of Transaction {% endblock %}
 {% block title %} Summary of Transaction {% endblock %}
 {% block mainbody %}
-	<h2> Search Transaction </h2>
-	<hr />
-{% comment %}
- {% url 'aiuts:searchtransaction' %}" 
- {% endcomment %}
+   <h2> Search Transaction </h2>
+    <hr />
+    {% comment %}
+        {% url 'aiuts:searchtransaction' %}" 
+    {% endcomment %}
 
 
 
-<form method="POST">	
-	{% csrf_token %}
-  <div class="form-row">
-    <div class="col-md-4 mb-3">
-      <label for="from_date">From Date:</label>
-      <input class="form-control" type="date" name="from_date" id="from_date">
-    </div>
-    <div class="col-md-4 mb-3">
-        <label for="to_date">To Date:</label>
-      <input class="form-control" type="date" name="to_date" id="to_date" >
-    </div>
-    <div class="col-md-4 mb-3">
-      <label for="acc_addr">Account Address:</label>
-        <input type="text" class="form-control" id="acc_addr" name="acc_addr" placeholder="e034f958911e9d64b34cb1257d9c9dfc" aria-describedby="acc_addr">
-    </div>
-	<div class="col-md-4 mb-3">
-	  <button class="btn btn-primary" type="submit">Search</button>
-	</div>
-  </div>
+    <form method="POST">	
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="col-md-4 mb-3">
+                <label for="from_date">From Date:</label>
+                <input class="form-control" type="date" name="from_date" id="from_date">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label for="to_date">To Date:</label>
+                <input class="form-control" type="date" name="to_date" id="to_date" >
+            </div>
+                <div class="col-md-4 mb-3">
+                    <label for="acc_addr">Account Address:</label>
+                    <input type="text" class="form-control" id="acc_addr" name="acc_addr" placeholder="e034f958911e9d64b34cb1257d9c9dfc" aria-describedby="acc_addr">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+        </div>
 
-</form>
-		<br />
-	
-	<h2> Summary of Transaction </h2>
-	<hr />
-	{% if all_transaction %}
-	<table class="table">
-		<tr> 
-			
-			<th scope="col"> Date </th scope="col">
-			<th scope="col"> Sender </th scope="col">
-			<th scope="col"> Amount </th scope="col">
-			<th scope="col"> Recipient </th scope="col">
-			<th scope="col"> Remark </th scope="col">
-			<th scope="col"> Status </th>
-		</tr>
-		</thead>
-		<tbody>
-	{% endif %}
-	{% for transaction in all_transaction %}
-	<tr>
-		<th scope="row"> {{ transaction.record_date }} </th>
-		<td>{% if transaction.sender.acc_id == user %} You {% else %} {{ transaction.sender.acc_id }} {% endif %} </td>
-		<td> {{ transaction.amount|floatformat:2}} Baht </td>
-		<td>{% if transaction.recipient.acc_id == user %} You {% else %} {{ transaction.recipient.acc_id }} {% endif %} </td>
-		<td> {{ transaction.remark }} </td>
-		<td> {{ transaction.complete }} </td>
-	</tr>
-	{% empty %}
-	No transaction records!
-	{% endfor %}
-		</tbody>
-	</table>
-	{% endblock %}
+    </form>
+    <br />
+
+    <h2> Summary of Transaction </h2>
+    <hr />
+    {% if all_transaction %}
+        <table class="table">
+            <tr> 
+
+                <th scope="col"> Date </th scope="col">
+                <th scope="col"> Sender </th scope="col">
+                <th scope="col"> Amount </th scope="col">
+                <th scope="col"> Recipient </th scope="col">
+                <th scope="col"> Remark </th scope="col">
+                <th scope="col"> Status </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% endif %}
+            {% for transaction in all_transaction %}
+                <tr>
+                    <th scope="row"> {{ transaction.record_date }} </th>
+                <td>{% if transaction.sender.acc_id == user %} You {% else %} {{ transaction.sender.user.username }} {% endif %} </td>
+                <td> {{ transaction.amount|floatformat:2}} Baht </td>
+            <td>{% if transaction.recipient.acc_id == user %} You {% else %} {{ transaction.recipient.user.username }} {% endif %} </td>
+            <td> {{ transaction.remark }} </td>
+            <td> {{ transaction.complete }} </td>
+                </tr>
+            {% empty %}
+                No transaction records!
+            {% endfor %}
+            </tbody>
+        </table>
+  <script>
+
+        $(function () {
+            $('[data-toggle="popover"]').popover()
+        })
+    </script>
+   
+    {% endblock %}
