@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate
 from datetime import datetime, timedelta
-
+import hashlib
 class IndexView(generic.ListView):
     template_name = 'aiuts/index.html'
     context_object_name = 'all_user'
@@ -52,7 +52,6 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
         curr_acc = Account.objects.get(user=self.request.user)
         return set(Transaction.objects.filter(complete=False).filter(sender=curr_acc)).union(set(Transaction.objects.filter(complete=False).filter(recipient=curr_acc)))
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = Account.objects.get(user=self.request.user)
@@ -68,10 +67,10 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
             return redirect(request.META['HTTP_REFERER'])
         if len(sender_addr):
             sender = Account.objects.get(acc_id = sender_addr)
-            req_user = Transaction(sender=sender, recipient=user_acc, amount=amount, type="ROP")
+            req_user = Transaction(sender=sender, recipient=user_acc, amount=amount, type="Request of Payment")
             req_user.save()
         else:
-            req_admin = Transaction(sender=Account.objects.get(acc_id='bd5af1f610a12434c9128e4a399cef8a'), recipient=user_acc, amount=amount, type="TU")
+            req_admin = Transaction(sender=Account.objects.get(acc_id='bd5af1f610a12434c9128e4a399cef8a'), recipient=user_acc, amount=amount, type="Top Up")
             req_admin.save()
         messages.info(request, "New pending request is created!")
         return redirect(request.META['HTTP_REFERER'])
@@ -159,7 +158,7 @@ def send_money(request):
                 rec_acc.save()
                 transaction = Transaction(sender=curr_acc, recipient=rec_acc, amount=amount, remark=remark, complete=True)
                 transaction.save()     
-                messages.info(request, "You have sent {:.2f} baht to {}".format(amount, rec_acc.acc_id))
+                messages.info(request, "You have sent {:.2f} baht to {}".format(amount, rec_acc.user.username))
                 return redirect(request.META['HTTP_REFERER'])
     messages.info(request, "Please double check the detail again")
     return redirect(request.META['HTTP_REFERER'])

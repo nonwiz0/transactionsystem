@@ -17,7 +17,7 @@ class Transaction(models.Model):
     remark = models.CharField(max_length=256, default="No message")
     record_date = models.DateTimeField('date recorded', auto_now_add=True)
     complete = models.BooleanField(default=False)
-    type = models.CharField(choices=[('TU', 'Top Up'), ('ROP', 'Request of Payment'), ('NOR', 'Normal Transaction')], default='NOR', max_length=100)
+    type = models.CharField(choices=[('Top Up', 'TU'), ('Request of Payment', 'ROP'), ('Normal Transaction', 'NOR')], default='Normal Transaction', max_length=20)
     id = models.AutoField(primary_key=True)
 
     def __str__(self):
