@@ -3,19 +3,22 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.template import loader
 from django.views import generic
-from .models import User, Transaction
+from django.contrib.auth.models import User
+from .models import Account, Transaction
 from django.utils import timezone
-import hashlib
 from random import random
 from django.contrib import messages
-
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import authenticate
+from datetime import datetime, timedelta
+import hashlib
 class IndexView(generic.ListView):
     template_name = 'aiuts/index.html'
     context_object_name = 'all_user'
-
+    
     def get_queryset(self):
         """Return the last five published questions."""
-        return User.objects.all()[:]
+        return Account.objects.all()[:]
 
 class LoginView(generic.TemplateView):
     template_name = 'aiuts/login.html'
@@ -23,72 +26,118 @@ class LoginView(generic.TemplateView):
 class SignupView(generic.TemplateView):
     template_name = 'aiuts/sign_up.html'
 
-class GetbalanceView(generic.TemplateView):
-    template_name = 'aiuts/get_balance.html'
 
-class GetaccidView(generic.TemplateView):
-    template_name = 'aiuts/get_acc_id.html'
+class AdminDashboard(LoginRequiredMixin, generic.ListView):
+    login_url = '/accounts/login'
+    template_name = 'aiuts/admin_dash.html'
+    model = Transaction
+    context_object_name = 'all_transaction'
+
+    def get_queryset(self):
+        return Transaction.objects.filter(complete=False)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = Account.objects.get(user=self.request.user)
+        return context
+    
+
+class Dashboard(LoginRequiredMixin, generic.ListView):
+    login_url = '/accounts/login'
+    template_name = 'aiuts/account_dash.html'
+    model = Transaction
+    context_object_name = 'all_transaction'
+
+    def get_queryset(self):
+        curr_acc = Account.objects.get(user=self.request.user)
+        return set(Transaction.objects.filter(complete=False).filter(sender=curr_acc)).union(set(Transaction.objects.filter(complete=False).filter(recipient=curr_acc)))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = Account.objects.get(user=self.request.user)
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        template = loader.get_template(self.template_name)
+        user_acc = Account.objects.get(user=request.user)
+        amount = float(request.POST['amount'])
+        sender_addr = request.POST['acc_addr']
+        if amount < 0:
+            messages.info(request, "Please enter appropriate amount")
+            return redirect(request.META['HTTP_REFERER'])
+        if len(sender_addr):
+            sender = Account.objects.get(acc_id = sender_addr)
+            req_user = Transaction(sender=sender, recipient=user_acc, amount=amount, type="Request of Payment")
+            req_user.save()
+        else:
+            req_admin = Transaction(sender=Account.objects.get(acc_id='bd5af1f610a12434c9128e4a399cef8a'), recipient=user_acc, amount=amount, type="Top Up")
+            req_admin.save()
+        messages.info(request, "New pending request is created!")
+        return redirect(request.META['HTTP_REFERER'])
+
+class TransactionSummary(LoginRequiredMixin, generic.ListView):
+    login_url = '/accounts/login'
+    template_name = 'aiuts/get_summary.html'
+    context_object_name = 'user'
+
+    def get_queryset(self):
+        curr_user = Account.objects.get(user=self.request.user)
+        acc_id = curr_user.acc_id
+        return acc_id
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        curr_user = Account.objects.get(user=self.request.user)
+        acc_id = curr_user.acc_id
+        context['all_transaction'] = set(Transaction.objects.filter(sender=curr_user)).union(set(Transaction.objects.filter(recipient=curr_user)[:]))
+        return context
+
+    def post(self, request, *args, **kwargs):
+        template = loader.get_template(self.template_name)
+        user_acc = Account.objects.get(user=request.user)
+        acc_addr = request.POST['acc_addr']
+        from_date = request.POST['from_date']
+        to_date = request.POST['to_date']
+        if len(to_date):
+            to_date = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)
+        else:
+            to_date = datetime.now()
+        if len(from_date) and not len(acc_addr):
+            from_date = datetime.strptime(from_date, '%Y-%m-%d')
+            filter_record = set(Transaction.objects.filter(sender=user_acc.acc_id).filter(record_date__range=(from_date, to_date))).union(set(Transaction.objects.filter(recipient=user_acc.acc_id).filter(record_date__range=(from_date, to_date)))) 
+        else:
+            filter_record = set(Transaction.objects.filter(sender=user_acc.acc_id).filter(record_date__lte=to_date)).union(set(Transaction.objects.filter(recipient=user_acc.acc_id).filter(record_date__lte=to_date))) 
+        if Account.objects.filter(acc_id=acc_addr).exists():
+            target_acc = Account.objects.get(acc_id=acc_addr)
+            at_sender = Transaction.objects.filter(sender=user_acc)
+            at_recipient = Transaction.objects.filter(recipient=user_acc)
+            filter_at_sender = at_sender.filter(recipient=target_acc)
+            filter_at_recipient = at_recipient.filter(sender=target_acc)
+            if from_date and to_date:
+                filter_at_sender = filter_at_sender.filter(record_date__range=(from_date, to_date))
+                filter_at_recipient = filter_at_recipient.filter(record_date__range=(from_date, to_date))
+            if not from_date:
+                filter_at_sender = filter_at_sender.filter(record_date__lte=to_date)
+                filter_at_recipient = filter_at_recipient.filter(record_date__lte=to_date)
+            filter_record = set(filter_at_sender).union(set(filter_at_recipient))
+        context = {'all_transaction':filter_record, "user":user_acc.acc_id}
+        messages.info(request, "Found {} record(s)".format(len(filter_record)))
+        return HttpResponse(template.render(context, request))
+
 
 def create_acc(request):
-    fullname = request.POST['fullname']
+    username = request.POST['username']
     password = request.POST['password']
-     
-    if not len(fullname) or not len(password):
+    if not len(username) or not len(password):
         messages.info(request, 'Provide appropriate your full name and password!')
         return HttpResponseRedirect(reverse('aiuts:signup'))
-
-    acc_id = hashlib.md5(str.encode(fullname)).hexdigest()
-    hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    for acc in User.objects.all():
-        if acc.acc_id == acc_id:
-            messages.info(request, 'This name is already registered once!')
-            return HttpResponseRedirect(reverse('aiuts:signup'))
-    new_acc = User(acc_id, hash_pw, random() * 100)    
-    new_acc.save()
-    messages.info(request, '{} has been created!'.format(new_acc.acc_id))
+    acc_id = hashlib.md5(str.encode(username)).hexdigest()
+    user = User.objects.create_user(username=username, password=password)
+    user.save()
+    account = Account(user=user, acc_id=acc_id, balance=random() * 100)
+    account.save()
+    messages.info(request, '{} has been created!'.format(acc_id))
     return HttpResponseRedirect(reverse('aiuts:index'))
-
-def check_balance(request):
-    acc_id = request.POST['acc_id']
-    password = request.POST['password']
-    hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    if User.objects.filter(pk=acc_id).exists():
-        curr_user = User.objects.get(pk=acc_id)
-        if curr_user.password == hash_pw:
-            messages.info(request, 'Your account has {:.2f} Baht'.format(acc.balance))
-            return HttpResponseRedirect(reverse('aiuts:getbalance'))
-    else:
-        messages.info(request, 'Incorrect acc_id or password!')
-        return HttpResponseRedirect(reverse('aiuts:getbalance'))
-
-
-
-def check_accid(request):
-    fullname = request.POST['fullname']
-    password = request.POST['password']
-    hash_acc = hashlib.md5(str.encode(fullname)).hexdigest()
-    hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    for acc in User.objects.all():
-        if acc.acc_id == hash_acc and acc.password == hash_pw:
-            messages.info(request, 'Acc ID: {}'.format(acc.acc_id))
-            return redirect(request.META['HTTP_REFERER'])
-        if acc.acc_id == hash_acc and acc.password != hash_pw:
-            messages.info(request, 'Incorrect credential')
-            return redirect(request.META['HTTP_REFERER'])
-
-def check_account(request):
-    acc_id = request.POST['acc_id']
-    password = request.POST['password']
-    hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    for acc in User.objects.all():
-        if acc.acc_id == acc_id and acc.password == hash_pw:
-            template = loader.get_template('aiuts/account_dash.html')
-            user = User.objects.get(pk=acc_id)
-            context = {'user': user}
-            messages.info(request, 'Login successfully')
-            return HttpResponse(template.render(context, request))
-    messages.info(request, 'Incorrect credential')
-    return HttpResponseRedirect(reverse('aiuts:login'))
 
 
 def send_money(request):
@@ -96,66 +145,68 @@ def send_money(request):
     recipient = request.POST['destination'].strip()
     amount = float(request.POST['amount'])
     password = request.POST['password']
-    hash_pw = hashlib.md5(str.encode(password)).hexdigest()
-    remark = request.POST['remark']
-    for acc in User.objects.all():
-        if acc.acc_id == acc_id and acc.password == hash_pw:
-            if amount < acc.balance and User.objects.filter(pk=recipient).exists():
-                recipient_acc = User.objects.get(pk=recipient)
-                acc.balance -= amount
-                recipient_acc.balance += amount
-                recipient_acc.save()
-                acc.save()
-                messages.info(request, "Money sent successfully, you have {} baht left".format(acc.balance))
-                transaction = Transaction(sender=acc, recipient=recipient_acc, amount=amount, remark=remark)
-                transaction.save()
-                return HttpResponseRedirect(reverse('aiuts:getbalance'))
-                # return redirect(request.META['HTTP_REFERER'])
-            else:
-                messages.info(request, "Failed to send, please check the address")
-                return HttpResponseRedirect(reverse('aiuts:getbalance'))
-        if acc.acc_id == acc_id and acc.password != hash_pw:
-            messages.info(request, 'Incorrect credential')
-            return HttpResponseRedirect(reverse('aiuts:getbalance'))
-           # return redirect(request.META['HTTP_REFERER'])
-    return HttpResponseRedirect(reverse('aiuts:getbalance'))
+    remark = request.POST['remark'] 
+    if Account.objects.filter(acc_id=recipient).exists():
+        rec_acc = Account.objects.get(acc_id=recipient)
+        user = authenticate(request, username=request.user.username, password=password)
+        if user is not None:
+            curr_acc = Account.objects.get(acc_id=acc_id)
+            if amount > 0 and amount < curr_acc.balance:
+                curr_acc.balance -= amount
+                rec_acc.balance += amount
+                curr_acc.save()
+                rec_acc.save()
+                transaction = Transaction(sender=curr_acc, recipient=rec_acc, amount=amount, remark=remark, complete=True)
+                transaction.save()     
+                messages.info(request, "You have sent {:.2f} baht to {}".format(amount, rec_acc.user.username))
+                return redirect(request.META['HTTP_REFERER'])
+    messages.info(request, "Please double check the detail again")
+    return redirect(request.META['HTTP_REFERER'])
 
 def deposit_money(request):
     acc_id = request.POST['acc_id']
     amount = float(request.POST['amount'])
     password = request.POST['password']
-    hash_pass = hashlib.md5(str.encode(password)).hexdigest()
-    if User.objects.filter(pk=acc_id).exists():
-        user_acc = User.objects.get(pk=acc_id)
-        if hash_pass == user_acc.password:
-            user_acc.balance += amount
-            user_acc.save()
-            record = Transaction(sender=user_acc, recipient=user_acc, amount=amount, remark="Deposit")
-            record.save()
-            messages.info(request, "Your balance right now is {:.2f}".format(user_acc.balance))
+    user = authenticate(request, username=request.user.username, password=password)
+    if amount > 0:
+        if user is not None:
+            curr_acc = Account.objects.get(user=request.user)
+            curr_acc.balance += amount
+            curr_acc.save()
+            trans_record = Transaction(sender=curr_acc, recipient=curr_acc, amount=amount, remark="Deposit money")
+            trans_record.complete=True
+            trans_record.save()
+            messages.info(request, "You have deposited {:.2f} Baht".format(amount))
             return redirect(request.META['HTTP_REFERER'])
-
-class TransactionView(generic.TemplateView):
-    template_name = 'aiuts/get_summary_with_acc.html'
-
-class SendMoneyView(generic.TemplateView):
-    template_name = 'aiuts/send_money.html'
-
-
-def get_summary_of_transaction(request):
-    acc_id = request.POST['acc_id']
-    password = request.POST['password']
-    hash_pass = hashlib.md5(str.encode(password)).hexdigest()
-    template = loader.get_template('aiuts/get_summary.html')
-    if User.objects.filter(pk=acc_id).exists():
-        user_acc = User.objects.get(pk=acc_id)
-        if hash_pass == user_acc.password:
-            all_transaction = list(Transaction.objects.filter(sender=acc_id))+list(Transaction.objects.filter(recipient=acc_id)[:])
-            context = {
-                'all_transaction': all_transaction,
-                'user': acc_id
-            }
-            return HttpResponse(template.render(context, request))
-    messages.info(request, "Incorrect password!")
+    messages.info(request, "Check the detail again before deposit!")
     return redirect(request.META['HTTP_REFERER'])
+
+def approve_transaction(request, tid):
+    if Transaction.objects.filter(id=tid).exists():
+       record = Transaction.objects.get(id=tid)
+       recipient = record.recipient
+       recipient.balance += record.amount
+       sender = record.sender
+       if sender.balance < record.amount:
+           messages.info(request, "Please make sure you have enough balance")
+           return redirect(request.META['HTTP_REFERER'])
+       sender.balance -= record.amount
+       sender.save()
+       recipient.save()
+       record.complete = True
+       record.remark = "Approved at {}".format(timezone.now())
+       record.save()
+    messages.info(request, "Transaction ID: {} is approved".format(tid))
+    return redirect(request.META['HTTP_REFERER'])
+
+def decline_transaction(request, tid):
+    if Transaction.objects.filter(id=tid).exists():
+        record = Transaction.objects.get(id=tid)
+        record.remark = "Transaction is Declined"
+        record.complete = True
+        record.save()    
+    messages.info(request, "Transaction ID: {} is declined".format(tid))
+    return redirect(request.META['HTTP_REFERER'])
+
+
 

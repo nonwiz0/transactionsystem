@@ -1,0 +1,66 @@
+
+{% extends "aiuts/base.html" %}
+{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Dashboard {% endblock %}
+{% block title %} Dashboard {% endblock %}
+{% block mainbody %}
+
+	<hr />
+	<p style="float: left"> <b>Acc ID:</b> {{ user.acc_id}} </p>
+	<p style="float: right"> <b>Balance:</b> {{ user.balance | floatformat:2 }} Baht </p>
+	</div>
+	<br />
+	<h2 class="margin-top"> Deposit Money </h2>
+	<hr />
+	<form action="{% url 'aiuts:depositmoney' %}" method="post">
+		{% csrf_token %}
+		<div class="form-group">
+		<input type="hidden" name="acc_id" value="{{ user.acc_id }}" />
+		<label> Amount: </label>
+		<input class="form-control" step="0.01" required="required" type="number" name="amount">
+		<label> Password: </label>
+		<input class="form-control" required="required" type="password" name="password" />
+
+		<input class="btn my-2 btn-outline-primary" type="submit" value="Deposit">
+		</div>
+
+	</form>
+	<h2 class="margin-top"> Pending Transaction </h2>
+	<hr />
+	{% if all_transaction %}
+	<table class="table">
+		<tr> 
+			<th scope="col"> Date </th scope="col">
+			<th scope="col"> Finance Controller </th scope="col">
+			<th scope="col"> Amount </th scope="col">
+			<th scope="col"> Recipient </th scope="col">
+	
+			<th scope="col"> Action </th>
+		</tr>
+		</thead>
+		<tbody>
+	{% endif %}
+	{% for transaction in all_transaction %}
+	<tr>
+		<th scope="row"> {{ transaction.record_date }} </th>
+		<td>{% if transaction.sender.acc_id == user %} You {% else %} {{ transaction.sender.acc_id }} {% endif %} </td>
+		<td> {{ transaction.amount|floatformat:2}} Baht </td>
+		<td>{% if transaction.recipient.acc_id == user %} You {% else %} {{ transaction.recipient.acc_id }} {% endif %} </td>
+	
+		<td> <a href="{% url 'aiuts:approvetransaction' transaction.id %}"> Approve </a> | <a href="{% url 'aiuts:declinetransaction' transaction.id %}" class="text-danger"> Decline </a> </td>
+	</tr>
+	{% empty %}
+	No pending top up request!
+	{% endfor %}
+		</tbody>
+	</table>
+
+
+	<h2 class="margin-top"> Get Summary's Transaction </h2>
+	<hr />
+	<a href="{% url 'aiuts:transactionsummary' %}"> Open Summary of Transaction </a>
+
+
+
+	
+
+{% endblock %}

@@ -25,7 +25,7 @@ SECRET_KEY = 'wkv!jg4-ar(%*r5%ydl=y8^cs)s+-mkpk+048#h#ypq#gl&j-t'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -55,7 +55,7 @@ ROOT_URLCONF = 'transactionsystem.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [Path.joinpath(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -68,6 +68,7 @@ TEMPLATES = [
     },
 ]
 
+LOGIN_REDIRECT_URL = '/aiuts/'
 WSGI_APPLICATION = 'transactionsystem.wsgi.application'
 
 
