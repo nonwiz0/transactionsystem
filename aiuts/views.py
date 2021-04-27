@@ -12,6 +12,46 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate
 from datetime import datetime, timedelta
 import hashlib
+from django.http import JsonResponse
+from django.core import serializers
+from .forms import TopupForm
+
+class TopupView(LoginRequiredMixin, generic.CreateView):
+    login_url = '/accounts/login'
+    form_class = TopupForm
+    template_name = "aiuts/top_up.html"
+
+    def get(self, *args, **kwargs):
+        acc = Account.objects.filter(user=self.request.user)
+        form = self.form_class(account=acc)
+        curr_acc = Account.objects.get(user=self.request.user)
+        transactions = set(Transaction.objects.filter(complete=False).filter(sender=curr_acc)).union(set(Transaction.objects.filter(complete=False).filter(recipient=curr_acc)))
+        context = {"form": form, "all_transaction": transactions,
+                   "user":curr_acc,
+                   "bank": Account.objects.get(acc_id="bd5af1f610a12434c9128e4a399cef8a")}
+        return render(self.request, self.template_name, context)
+
+    def post(self, *args, **kwargs):
+        if self.request.is_ajax and self.request.method == "POST":
+            form = self.form_class(self.request.POST)
+            if form.is_valid():
+                instance = form.save()
+                ser_instance = serializers.serialize('json', [instance,])
+                return JsonResponse({"instance": ser_instance}, status=200)
+            else:
+                return JsonResponse({"error":""}, status=400)
+
+def checkTopupReq(request):
+    if request.is_ajax and request.method == "GET":
+        return JsonResponse({"valid": True}, status=200)
+
+def getRandomData(request):
+    # request should be ajax and method should be GET.
+    if request.is_ajax and request.method == "GET":
+        now = str(timezone.now())
+        return JsonResponse({"randomdata":str(hashlib.md5(now.encode()))+" - "+now}, status = 200)
+    return JsonResponse({}, status = 400)
+
 class IndexView(generic.ListView):
     template_name = 'aiuts/index.html'
     context_object_name = 'all_user'
@@ -19,9 +59,6 @@ class IndexView(generic.ListView):
     def get_queryset(self):
         """Return the last five published questions."""
         return Account.objects.all()[:]
-
-class LoginView(generic.TemplateView):
-    template_name = 'aiuts/login.html'
 
 class SignupView(generic.TemplateView):
     template_name = 'aiuts/sign_up.html'

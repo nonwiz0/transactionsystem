@@ -1,7 +1,23 @@
 # AIUTS < Transaction System
-Latest updated on April 13, by Broset, Yilin, Andreas
+Latest updated on April 27, by Broset, Yilin, Andreas
+
+## Accounts Login:
+```
+# Bank Account is the one that use to approve the Top Up Request from Users
+Username: bank
+Password: A****15 (lab pw)
+```
+
+```
+# Normal Accounts
+Username: yilin
+Username#2: broset
+Username#3: andreas
+# Same password like the above 
+```
 
 ## Updated list:
+- Working on Ajax
 - Added 17 testings
 - Provided testings description
 - Fix the views

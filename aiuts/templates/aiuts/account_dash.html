@@ -44,19 +44,9 @@
 
             <h2 class="margin-top"> Top Up </h2>
             <hr />
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-group">
-                    <input type="hidden" name="acc_addr" value="" />
-                    <label> Amount: </label>
-                    <input class="form-control" required="required" type="number" step="0.01" name="amount">
-
-                    <input class="btn my-2 btn-outline-primary" type="submit" value="Request">
-                </div>
-
-            </form>
-
-            <h2 class="margin-top"> Request Payment </h2>
+            <a href="{% url 'aiuts:topup_req' %}"> Open Top Up Account </a>
+            <br />
+                       <h2 class="margin-top"> Request Payment </h2>
             <hr />
             <form method="post">
                 {% csrf_token %}

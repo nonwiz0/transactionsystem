@@ -1,0 +1,103 @@
+
+{% extends "aiuts/base.html" %}
+{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Top Up {% endblock %}
+{% block title %} Top Up {% endblock %}
+{% block mainbody %}
+    <hr />
+    <div>
+        <p style="float: left"> <b>Acc ID:</b> {{ user.acc_id}} </p>
+        <div />
+            <p style="float: right"> <b>Balance:</b> {{ user.balance | floatformat:2 }} Baht </p>
+        </div>
+        <br />
+        <h2 class="margin-top"> Pending Transaction </h2>
+        <hr />
+        {% if all_transaction %}
+            <table class="table" id="my_topups">
+                <tr> 
+                    <th scope="col"> Date </th scope="col">
+                    <th scope="col"> Requested </th scope="col">
+                    <th scope="col"> Amount </th scope="col">
+                    <th scope="col"> Recipient </th scope="col">
+
+                    <th scope="col"> Completion </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% endif %}
+                {% for transaction in all_transaction %}
+                    <tr>
+                        <th scope="row"> {{ transaction.record_date }} </th>
+                    <td>{% if transaction.sender.user.username == request.user.username %} You {% else %} {{ transaction.sender.user.username }} {% endif %} </td>
+                    <td> {{ transaction.amount|floatformat:2}} Baht </td>
+                <td>{% if transaction.recipient.user.username == request.user.username %} You {% else %} {{ transaction.recipient.user.username }} {% endif %} </td>
+
+            <td>{% if transaction.recipient.user.username == request.user.username %} {{ transaction.complete }} {% else  %} <a href="{% url 'aiuts:approvetransaction' transaction.id %}"> Approve </a> | <a href="{% url 'aiuts:declinetransaction' transaction.id %}" class="text-danger"> Decline </a>{% endif %} </td>
+                    </tr>
+                {% empty %}
+                    No pending top up request!
+                {% endfor %}
+                </tbody>
+            </table>
+
+
+            <h2 class="margin-top"> Top Up </h2>
+            <hr />
+            <form id="topup-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit" class="btn btn-outline-primary" value="Submit" />
+            </form>
+            <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+            <script>dayjs().format()</script>
+
+        {% endblock %}
+        {% block script %}
+          $("#topup-form").submit(function (e) {
+            e.preventDefault();
+            var serializedData = $(this).serialize();
+            $.ajax({
+            type: 'POST',
+            url: "{% url 'aiuts:topup_req' %}",
+            data: serializedData,
+            success: function (response) {
+            $("#topup-form").trigger('reset');
+            $("#id_amount").focus();
+
+            var instance = JSON.parse(response["instance"]);
+            var topup = instance[0]["fields"];
+            $("#my_topups").append(`
+            <tr>
+                <th>${dayjs().format('MMMM D, YYYY, h:mm a.')||""}</th>     
+                <td>${"bank"||""}</td>
+                <td>${topup["amount"] + " Baht"||""}</td>
+                <td>${"You"}</td>
+                <td>${"False"}</td>
+            </tr>
+            `)
+            },
+            error: function(response) {
+            alert(response["responseJSON"]["error"]);
+            }
+
+            })
+            })
+
+    function fetchdata(){
+ $.ajax({
+ url: '{% url 'aiuts:topup_req' %}',
+  type: 'GET',
+  success: function(data){
+   // Perform operation on return value
+  },
+  complete:function(data){
+   setTimeout(fetchdata,5000);
+  }
+ });
+}
+
+$(document).ready(function(){
+ setTimeout(fetchdata,5000);
+});
+         
+        {% endblock %}
