@@ -1,25 +1,25 @@
 
 {% extends "aiuts/base.html" %}
-{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > Top Up {% endblock %}
+{% block currPage %} <a href="{% url 'aiuts:index' %}"> Index </a> > <a href="{% url 'aiuts:dashboard' %}">Dashboard</a> > Top Up {% endblock %}
 {% block title %} Top Up {% endblock %}
 {% block mainbody %}
+    <main id="topup-page">
     <hr />
     <div>
         <p style="float: left"> <b>Acc ID:</b> {{ user.acc_id}} </p>
         <div />
-            <p style="float: right"> <b>Balance:</b> {{ user.balance | floatformat:2 }} Baht </p>
+            <p style="float: right"> <b>Balance:</b> <span id="curr_balance">{{ user.balance | floatformat:2 }}</span> Baht </p>
         </div>
         <br />
-        <h2 class="margin-top"> Pending Transaction </h2>
+        <h2 class="margin-top"> Pending Transactions </h2>
         <hr />
         {% if all_transaction %}
             <table class="table" id="my_topups">
                 <tr> 
                     <th scope="col"> Date </th scope="col">
-                    <th scope="col"> Requested </th scope="col">
-                    <th scope="col"> Amount </th scope="col">
                     <th scope="col"> Recipient </th scope="col">
-
+                    <th scope="col"> Amount </th scope="col">
+                    <th scope="col"> Type of Transaction</th>
                     <th scope="col"> Completion </th>
                 </tr>
                 </thead>
@@ -28,32 +28,36 @@
                 {% for transaction in all_transaction %}
                     <tr>
                         <th scope="row"> {{ transaction.record_date }} </th>
-                    <td>{% if transaction.sender.user.username == request.user.username %} You {% else %} {{ transaction.sender.user.username }} {% endif %} </td>
+                    <td>{% if transaction.recipient.user.username == request.user.username %} You {% else %} {{ transaction.recipient.user.username }} {% endif %} </td>
                     <td> {{ transaction.amount|floatformat:2}} Baht </td>
-                <td>{% if transaction.recipient.user.username == request.user.username %} You {% else %} {{ transaction.recipient.user.username }} {% endif %} </td>
-
-            <td>{% if transaction.recipient.user.username == request.user.username %} {{ transaction.complete }} {% else  %} <a href="{% url 'aiuts:approvetransaction' transaction.id %}"> Approve </a> | <a href="{% url 'aiuts:declinetransaction' transaction.id %}" class="text-danger"> Decline </a>{% endif %} </td>
+                    <td>{{transaction.type}}</td>
+                <td>{% if transaction.recipient.user.username == request.user.username %} {{ transaction.complete }} {% else  %} <a href="{% url 'aiuts:approvetransaction' transaction.id %}"> Approve </a> | <a href="{% url 'aiuts:declinetransaction' transaction.id %}" class="text-danger"> Decline </a>{% endif %} </td>
                     </tr>
                 {% empty %}
-                    No pending top up request!
+                    <table id="my_topups"></table>
+                    <span id="empty">No pending top up request!</span>
                 {% endfor %}
                 </tbody>
             </table>
+    </main>
 
+            {% if request.user.username != "bank" %}
+                <h2 class="margin-top"> Top Up </h2>
+                <hr />
+                <form id="topup-form">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <input type="submit" class="btn btn-outline-primary" value="Submit" />
+                </form>
 
-            <h2 class="margin-top"> Top Up </h2>
-            <hr />
-            <form id="topup-form">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <input type="submit" class="btn btn-outline-primary" value="Submit" />
-            </form>
-            <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
-            <script>dayjs().format()</script>
+                <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+                <script>dayjs().format()</script>
 
+            {% endif %}
         {% endblock %}
         {% block script %}
-          $("#topup-form").submit(function (e) {
+            {% if request.user.username != "bank" %}
+            $("#topup-form").submit(function (e) {
             e.preventDefault();
             var serializedData = $(this).serialize();
             $.ajax({
@@ -69,9 +73,9 @@
             $("#my_topups").append(`
             <tr>
                 <th>${dayjs().format('MMMM D, YYYY, h:mm a.')||""}</th>     
-                <td>${"bank"||""}</td>
-                <td>${topup["amount"] + " Baht"||""}</td>
                 <td>${"You"}</td>
+                <td>${topup["amount"] + " Baht"||""}</td>
+                <td>${topup["type"]}</td>
                 <td>${"False"}</td>
             </tr>
             `)
@@ -82,22 +86,44 @@
 
             })
             })
+            {% endif %}
 
-    function fetchdata(){
- $.ajax({
- url: '{% url 'aiuts:topup_req' %}',
-  type: 'GET',
-  success: function(data){
-   // Perform operation on return value
-  },
-  complete:function(data){
-   setTimeout(fetchdata,5000);
-  }
- });
-}
+            function fetchdata(){
+            $.ajax({
+            // URL refers to the same page
+            url: '{% url 'aiuts:topup_req' %}',
+            type: 'GET',
+            success: function(data){
+            // Get the new balance
+            balance = data.slice(data.indexOf("Balance") + 37, data.indexOf(`Baht`) - 8 );
+            // To refresh the table
+            table = data.slice(data.indexOf("table") - 1, data.indexOf("/table") + 10);
+            // Replace the balance usign the id of curr_balance
+            $("#curr_balance").replaceWith("<span id='curr_balance'>"+balance+"</span>");
+            $("#empty").remove();
+            $("#my_topups").replaceWith(table);
+            console.log("Reload data");
+            alert = `<ul class="messages">
+                    <div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+                        Updated!
+                        <a type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </a>
+                    </div>
 
-$(document).ready(function(){
- setTimeout(fetchdata,5000);
-});
-         
+            </ul>`;
+            $(".messages").hide();
+            $("body").append(alert);
+            setTimeout(function() {$(".messages").hide()}, 2000)
+            },
+            complete:function(data){
+            setTimeout(fetchdata,5000);
+            }
+            });
+            }
+
+            $(document).ready(function(){
+            setTimeout(fetchdata,5000);
+            });
+
         {% endblock %}

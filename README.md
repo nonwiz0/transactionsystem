@@ -21,6 +21,7 @@ Username#3: andreas
 ```
 
 ## Updated list:
+- Updated AJax's alert on Top Up
 - Working on Ajax
 - Added 17 testings
 - Provided testings description

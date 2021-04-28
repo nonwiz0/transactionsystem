@@ -10,7 +10,7 @@
             <p style="float: right"> <b>Balance:</b> {{ user.balance | floatformat:2 }} Baht </p>
         </div>
         <br />
-        <h2 class="margin-top"> Pending Transaction </h2>
+        <h2 class="margin-top"> Pending transactions </h2>
         <hr />
         {% if all_transaction %}
             <table class="table">
@@ -18,8 +18,8 @@
                     <th scope="col"> Date </th scope="col">
                     <th scope="col"> Requested </th scope="col">
                     <th scope="col"> Amount </th scope="col">
-                    <th scope="col"> Recipient </th scope="col">
 
+                    <th scope="col"> Type of Transaction</th>
                     <th scope="col"> Completion </th>
                 </tr>
                 </thead>
@@ -28,9 +28,9 @@
                 {% for transaction in all_transaction %}
                     <tr>
                         <th scope="row"> {{ transaction.record_date }} </th>
-                    <td>{% if transaction.sender.user.username == request.user.username %} You {% else %} {{ transaction.sender.user.username }} {% endif %} </td>
+                    <td>{{transaction.recipient.user.username}}</td>
                     <td> {{ transaction.amount|floatformat:2}} Baht </td>
-                <td>{% if transaction.recipient.user.username == request.user.username %} You {% else %} {{ transaction.recipient.user.username }} {% endif %} </td>
+                <td> {{transaction.type}}</td>
 
                 <td>{% if transaction.recipient.user.username == request.user.username %} {{ transaction.complete }} {% else  %} <a href="{% url 'aiuts:approvetransaction' transaction.id %}"> Approve </a> | <a href="{% url 'aiuts:declinetransaction' transaction.id %}" class="text-danger"> Decline </a>{% endif %} </td>
                     </tr>

@@ -106,9 +106,6 @@ class Dashboard(LoginRequiredMixin, generic.ListView):
             sender = Account.objects.get(acc_id = sender_addr)
             req_user = Transaction(sender=sender, recipient=user_acc, amount=amount, type="Request of Payment")
             req_user.save()
-        else:
-            req_admin = Transaction(sender=Account.objects.get(acc_id='bd5af1f610a12434c9128e4a399cef8a'), recipient=user_acc, amount=amount, type="Top Up")
-            req_admin.save()
         messages.info(request, "New pending request is created!")
         return redirect(request.META['HTTP_REFERER'])
 

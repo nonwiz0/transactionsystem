@@ -15,11 +15,15 @@ class TopupForm(forms.ModelForm):
             'min': 0.00,
 
         })
+        self.fields['type'].choices = [("Top Up", "Top Up")]
+        self.fields['type'].widget.attrs.update({
+            'value': 'Top Up',
+        })
         for name in self.fields.keys():
             self.fields[name].widget.attrs.update({
                 'class': 'form-control',
             })
     class Meta:
         model = Transaction
-        fields = ('sender', 'amount', 'recipient')
+        fields = ('sender', 'amount', 'recipient', 'type')
 
