@@ -8,8 +8,6 @@
         {% url 'aiuts:searchtransaction' %}" 
     {% endcomment %}
 
-
-
     <form method="POST">	
         {% csrf_token %}
         <div class="form-row">
@@ -65,11 +63,6 @@
             {% endfor %}
             </tbody>
         </table>
-  <script>
-
-        $(function () {
-            $('[data-toggle="popover"]').popover()
-        })
-    </script>
    
     {% endblock %}
+  
