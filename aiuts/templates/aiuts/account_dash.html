@@ -7,7 +7,7 @@
     <div>
         <p style="float: left"> <b>Acc ID:</b> {{ user.acc_id}} </p>
         <div />
-            <p style="float: right"> <b>Balance:</b> {{ user.balance | floatformat:2 }} Baht </p>
+            <p style="float: right"> <b>Balance:</b> <span id="curr_balance">{{ user.balance | floatformat:2 }}</span> Baht </p>
         </div>
         <br />
         <h2 class="margin-top"> Pending transactions </h2>
@@ -28,9 +28,9 @@
                 {% for transaction in all_transaction %}
                     <tr>
                         <th scope="row"> {{ transaction.record_date }} </th>
-                    <td>{{transaction.recipient.user.username}}</td>
+                    <td>{% if transaction.sender.user.username == "bank" %} {{ transaction.recipient.user.username }} {% else %} {{transaction.sender.user.username}} {% endif %}</td>
                     <td> {{ transaction.amount|floatformat:2}} Baht </td>
-                <td> {{transaction.type}}</td>
+                    <td> {{transaction.type}}</td>
 
                 <td>{% if transaction.recipient.user.username == request.user.username %} {{ transaction.complete }} {% else  %} <a href="{% url 'aiuts:approvetransaction' transaction.id %}"> Approve </a> | <a href="{% url 'aiuts:declinetransaction' transaction.id %}" class="text-danger"> Decline </a>{% endif %} </td>
                     </tr>
@@ -46,9 +46,9 @@
             <hr />
             <a href="{% url 'aiuts:topup_req' %}"> Open Top Up Account </a>
             <br />
-                       <h2 class="margin-top"> Request Payment </h2>
+            <h2 class="margin-top"> Request Payment </h2>
             <hr />
-            <form method="post">
+            <form id="req_payment">
                 {% csrf_token %}
                 <div class="form-group">
                     <label> <b> From </b> Account Address: </label>
@@ -56,7 +56,7 @@
                     <label> Amount: </label>
                     <input class="form-control" required="required" type="number" step="0.01" name="amount">
 
-                    <input class="btn my-2 btn-outline-primary" type="submit" value="Deposit">
+                    <input class="btn my-2 btn-outline-primary" type="submit" value="Request">
                 </div>
 
             </form>
@@ -64,7 +64,7 @@
 
             <h2 class="margin-top"> Send Money </h2>
             <hr />
-            <form action="{% url 'aiuts:sendmoney' %}" method="post">
+            <form id="send_payment">
                 {% csrf_token %}
                 <div class="form-group">
                     <input type="hidden" name="source" value="{{ user.acc_id }}"/>
@@ -93,5 +93,97 @@
 
 
 
+
+        {% endblock %}
+        {% block script %}
+            $("#send_payment").submit(function (e) {
+            e.preventDefault();
+            var serializedData = $(this).serialize();
+            $.ajax({
+            type: 'POST',
+            url: "{% url 'aiuts:sendmoney' %}",
+            data: serializedData,
+            success: function (response) {
+            $("#send_payment").trigger('reset');
+            alert = `<ul class="messages">
+                <div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+                    Sending completed!
+                    <a type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </a>
+                </div>
+
+            </ul>`;
+            $(".messages").hide();
+            $("body").append(alert);
+            setTimeout(function() {$(".messages").hide()}, 2000)
+
+            },
+            error: function(response) {
+
+            }
+            })
+            })
+            $("#req_payment").submit(function (e) {
+            e.preventDefault();
+            var serializedData = $(this).serialize();
+            $.ajax({
+            type: 'POST',
+            url: "{% url 'aiuts:dashboard' %}",
+            data: serializedData,
+            success: function (response) {
+            $("#req_payment").trigger('reset');
+            table = $("table", response).html();
+            $("table").replaceWith(`<table class='table'>` + table + `</table>`);
+            alert = `<ul class="messages">
+                <div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+                    Updated!
+                    <a type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </a>
+                </div>
+
+            </ul>`;
+            $(".messages").hide();
+            $("body").append(alert);
+            setTimeout(function() {$(".messages").hide()}, 2000)
+
+            },
+            error: function(response) {
+
+            }
+            })
+            })
+            function fetchdata(){
+            $.ajax({
+            url: '{% url 'aiuts:dashboard' %}',
+            type: 'GET',
+            success: function(data){
+            balance = $("#curr_balance", data).text();
+            table = $("table", data).html();
+            console.log(balance);
+            $("table").replaceWith("<table class='table'>" + table + "</table>");
+            $("#curr_balance").text(balance);
+            $("#empty").remove();
+            alert = `<ul class="messages">
+                <div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+                    Updated!
+                    <a type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </a>
+                </div>
+
+            </ul>`;
+            setTimeout(function() {$(".messages").hide()}, 2000)
+            },
+            complete:function(data){
+            setTimeout(fetchdata,5000);
+            }
+            });
+            }
+
+            $(document).ready(function(){
+            setTimeout(fetchdata,5000);
+            });
 
         {% endblock %}

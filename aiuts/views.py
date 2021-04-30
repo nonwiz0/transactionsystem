@@ -25,7 +25,8 @@ class TopupView(LoginRequiredMixin, generic.CreateView):
         acc = Account.objects.filter(user=self.request.user)
         form = self.form_class(account=acc)
         curr_acc = Account.objects.get(user=self.request.user)
-        transactions = set(Transaction.objects.filter(complete=False).filter(sender=curr_acc)).union(set(Transaction.objects.filter(complete=False).filter(recipient=curr_acc)))
+        bank = Account.objects.get(acc_id="bd5af1f610a12434c9128e4a399cef8a")
+        transactions = Transaction.objects.filter(complete=False).filter(sender=bank)
         context = {"form": form, "all_transaction": transactions,
                    "user":curr_acc,
                    "bank": Account.objects.get(acc_id="bd5af1f610a12434c9128e4a399cef8a")}

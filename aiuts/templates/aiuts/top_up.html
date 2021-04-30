@@ -54,6 +54,7 @@
                 <script>dayjs().format()</script>
 
             {% endif %}
+
         {% endblock %}
         {% block script %}
             {% if request.user.username != "bank" %}
@@ -79,6 +80,19 @@
                 <td>${"False"}</td>
             </tr>
             `)
+  alert = `<ul class="messages">
+                    <div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
+                        Requesting money!
+                        <a type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </a>
+                    </div>
+
+            </ul>`;
+            $(".messages").hide();
+            $("body").append(alert);
+            setTimeout(function() {$(".messages").hide()}, 2000)
+           
             },
             error: function(response) {
             alert(response["responseJSON"]["error"]);
@@ -90,32 +104,16 @@
 
             function fetchdata(){
             $.ajax({
-            // URL refers to the same page
             url: '{% url 'aiuts:topup_req' %}',
             type: 'GET',
             success: function(data){
-            // Get the new balance
-            balance = data.slice(data.indexOf("Balance") + 37, data.indexOf(`Baht`) - 8 );
-            // To refresh the table
-            table = data.slice(data.indexOf("table") - 1, data.indexOf("/table") + 10);
-            // Replace the balance usign the id of curr_balance
-            $("#curr_balance").replaceWith("<span id='curr_balance'>"+balance+"</span>");
+            balance = $("#curr_balance", data).text();
+            table = $("table", data).html(); 
+            $("#curr_balance").text(balance);
             $("#empty").remove();
-            $("#my_topups").replaceWith(table);
-            console.log("Reload data");
-            alert = `<ul class="messages">
-                    <div class="position-fixed bg-white border font-weight-bold border-dark alert alert-white alert-dismissible fade show" style="top: 10px; right: 1vw;" role="alert">
-                        Updated!
-                        <a type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </a>
-                    </div>
-
-            </ul>`;
-            $(".messages").hide();
-            $("body").append(alert);
-            setTimeout(function() {$(".messages").hide()}, 2000)
-            },
+            $("#my_topups").replaceWith(`<table class='table'>`+table+ `</table>`);
+            console.log("updated");
+           },
             complete:function(data){
             setTimeout(fetchdata,5000);
             }
