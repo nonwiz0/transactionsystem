@@ -1,7 +1,7 @@
 # AIUTS < Transaction System
 Latest updated on April 30, by Broset, Yilin, Andreas
 
-## Things to work on
+## Things to work on (Completed)
 - Ajax function on the dashboard
 - Ajax feature on Top Up page, updating the balance and record automatically when the bank approve
 - Ajax feature on Send/Req money
